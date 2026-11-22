@@ -1,4 +1,6 @@
 import hashlib
+import logging
+
 import os
 import logging
 
