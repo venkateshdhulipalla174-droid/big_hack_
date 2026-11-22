@@ -2,7 +2,6 @@ import hashlib
 import logging
 
 import os
-import logging
 
 logger = logging.getLogger(__name__)
 import time
@@ -267,42 +266,55 @@ class GeminiService:
         except Exception as err:
             self._map_and_raise_error(err)
 
+    
     def _map_and_raise_error(self, err: Exception) -> None:
         """Maps SDK/HTTP exceptions to K-SMART standardized errors without leaking secrets."""
+    
         err_msg = str(err)
-        # Redact any accidental API key occurrences in error string
+    
+        # Redact API key if it accidentally appears in the error
         if self._api_key and self._api_key in err_msg:
-            err_msg = err_msg.replace(self._api_key, "[REDACTED_API_KEY]")
-            logger.error(
+            err_msg = err_msg.replace(
+                self._api_key,
+                "[REDACTED_API_KEY]"
+            )
+    
+        # Log every mapped error, not just errors containing the API key
+        logger.error(
             "Gemini request failed | type=%s | status=%s | detail=%s",
             type(err).__name__,
             getattr(err, "code", None),
             err_msg,
         )
-
+    
         if isinstance(err, errors.APIError):
             code = getattr(err, "code", None)
+    
             if code == 429:
                 raise GeminiRateLimitError(
                     message="Gemini rate limit exceeded (quota exhausted)",
                 ) from None
+    
             if code == 504 or "timeout" in err_msg.lower():
                 raise GeminiTimeoutError(
                     message=f"Gemini request timed out: {err_msg}",
                 ) from None
+    
             raise GeminiAPIError(
                 message=f"Gemini API error ({code}): {err_msg}",
                 code="llm_unavailable",
                 status_code=code,
             ) from None
-
+    
         err_type = type(err).__name__.lower()
+    
         if "timeout" in err_type:
             raise GeminiTimeoutError(
                 message=f"Gemini request timed out: {err_msg}",
             ) from None
-
+    
         raise GeminiServiceError(
             message=f"Gemini service error: {err_msg}",
             code="llm_unavailable",
         ) from None
+    
