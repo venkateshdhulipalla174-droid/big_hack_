@@ -2,7 +2,11 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables before reading any configuration
-load_dotenv()
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT_DIR / ".env")
+print("Groq key loaded:", bool(os.getenv("GROQ_API_KEY")))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
