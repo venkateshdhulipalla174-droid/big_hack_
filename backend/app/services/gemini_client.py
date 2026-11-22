@@ -1,5 +1,8 @@
 import hashlib
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -268,6 +271,12 @@ class GeminiService:
         # Redact any accidental API key occurrences in error string
         if self._api_key and self._api_key in err_msg:
             err_msg = err_msg.replace(self._api_key, "[REDACTED_API_KEY]")
+            logger.error(
+            "Gemini request failed | type=%s | status=%s | detail=%s",
+            type(err).__name__,
+            getattr(err, "code", None),
+            err_msg,
+        )
 
         if isinstance(err, errors.APIError):
             code = getattr(err, "code", None)
